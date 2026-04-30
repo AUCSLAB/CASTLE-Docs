@@ -1,0 +1,30 @@
+/* force header/nav to purple and remove background images */
+header, header * {
+  background-image: none !important;
+  background: none !important;
+}
+
+/* common MkDocs default header/nav selectors */
+header.md-header,
+.md-header,
+.md-header__inner,
+nav.md-nav,
+nav.md-header,
+.navbar,
+.navbar-inner,
+.wy-nav-top,
+.wy-side-nav-search,
+.wy-side-nav-scroll,
+.md-top-nav__links,
+.md-mobile-header,
+.wy-side-nav__toggle {
+  background-color: #6a0dad !important;
+  background: linear-gradient(#6a0dad, #6a0dad) !important;
+  color: #fff !important;
+}
+
+/* links inside header */
+header a, .md-header a, .wy-nav-top a, .navbar a {
+  color: #fff !important;
+}
+

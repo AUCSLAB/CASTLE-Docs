@@ -1,0 +1,10 @@
+site_name: CASTLE Docs
+nav:
+  - Home: index.md
+  - About: about.md
+  - Practices: practices.md
+  - Equipment: equipment.md
+  - PC Build: pc_build.md
+  - Server: server.md
+extra_css:
+  - style.css
