@@ -15,7 +15,7 @@ Supervising Faculty Member, Student Lab Director, Student Maintainer.
 # Build and Deploy
 The HTML is built using [mkdocs](https://www.mkdocs.org/).
 You can preview changes by entering the `castledocs` directory and running
-`mkdocs serve`
+`mkdocs serve`.
 To deploy your changes, run `mkdocs gh-deploy`. This will automatically build
 the site and push it to the gh-pages branch of the repository.
 Remember to also push your changes to the main branch, or your edits will be

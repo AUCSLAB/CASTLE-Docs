@@ -5,6 +5,7 @@ This page is an inventory of all CASTLE Lab computer equipment.
 | Name       | Type       |
 |------------|------------|
 | CASTLE-1   | Desktop    |
+| CASTLE-2   | Desktop    |
 
 # Network Hardware
 | Name     | Type            |
