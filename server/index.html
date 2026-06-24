@@ -122,6 +122,13 @@
 <pre><code>sudo apt install mdadm
 </code></pre>
 <ul>
+<li>Clear the old partition tables from the disks:</li>
+</ul>
+<pre><code class="language-bash">sudo dd if=/dev/zero of=/dev/nvme0n1 bs=4096 count=1000
+sudo dd if=/dev/zero of=/dev/nvme1n1 bs=4096 count=1000
+sudo dd if=/dev/zero of=/dev/nvme2n1 bs=4096 count=1000```
+</code></pre>
+<ul>
 <li>Then create the RAID 5 array:</li>
 </ul>
 <pre><code>sudo mdadm --create --verbose /dev/md0 --level=5 --raid-devices=3 /dev/nvme0n1 /dev/nvme1n1 /dev/nvme2n1
