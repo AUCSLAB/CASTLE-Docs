@@ -15,7 +15,7 @@ sudo apt install mdadm
 ```bash
 sudo dd if=/dev/zero of=/dev/nvme0n1 bs=4096 count=1000
 sudo dd if=/dev/zero of=/dev/nvme1n1 bs=4096 count=1000
-sudo dd if=/dev/zero of=/dev/nvme2n1 bs=4096 count=1000```
+sudo dd if=/dev/zero of=/dev/nvme2n1 bs=4096 count=1000
 ```
 
 + Then create the RAID 5 array:
