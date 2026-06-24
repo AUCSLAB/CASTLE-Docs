@@ -23,4 +23,16 @@ sudo dd if=/dev/zero of=/dev/nvme2n1 bs=4096 count=1000
 ```
 sudo mdadm --create --verbose /dev/md0 --level=5 --raid-devices=3 /dev/nvme0n1 /dev/nvme1n1 /dev/nvme2n1
 ```
-
++Create a filesystem on your new RAID device:
+```bash
+sudo mkfs.ext4 -F /dev/md0
+```
+Create a mount point and mount the drive:
+```bash
+sudo mkdir -p /mnt/raid
+sudo mount /dev/md0 /mnt/raid
+```
+Persist the configuration so it mounts automatically after a reboot:
+```bash
+sudo mdadm --detail --scan | sudo tee -a /etc/mdadm/mdadm.conf
+```
