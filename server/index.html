@@ -103,6 +103,51 @@
               <ul class="nav flex-column">
               </ul>
             </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#freeipa-lab-server-documentation" class="nav-link">FreeIPA Lab Server Documentation</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#1-architecture-overview" class="nav-link">1. Architecture Overview</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#2-prerequisites-on-the-debian-host" class="nav-link">2. Prerequisites on the Debian Host</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#3-one-time-setup-commands" class="nav-link">3. One-Time Setup Commands</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#4-day-to-day-operations" class="nav-link">4. Day-to-Day Operations</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#5-making-the-container-survive-crashes-and-reboots" class="nav-link">5. Making the Container Survive Crashes and Reboots</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#6-accessing-the-server" class="nav-link">6. Accessing the Server</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#7-backups" class="nav-link">7. Backups</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#8-enrolling-client-machines" class="nav-link">8. Enrolling Client Machines</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#9-firewall-network-requirements" class="nav-link">9. Firewall / Network Requirements</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#10-known-issues-encountered-during-setup-for-future-reference" class="nav-link">10. Known Issues Encountered During Setup (for future reference)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
         </ul>
     </div>
 </div></div>
@@ -142,7 +187,252 @@ sudo mount /dev/md0 /mnt/raid
 </code></pre>
 <p>Persist the configuration so it mounts automatically after a reboot:</p>
 <pre><code class="language-bash">sudo mdadm --detail --scan | sudo tee -a /etc/mdadm/mdadm.conf
-</code></pre></div>
+</code></pre>
+<h1 id="freeipa-lab-server-documentation">FreeIPA Lab Server Documentation</h1>
+<p><strong>Host:</strong> lux.alfred.edu (149.84.129.206)<br />
+<strong>Realm:</strong> ALFRED.EDU<br />
+<strong>Domain:</strong> alfred.edu<br />
+<strong>Container engine:</strong> Podman (rootful)<br />
+<strong>Base OS:</strong> Debian (host), Rocky Linux 9 (container image: <code>freeipa/freeipa-server:rocky-9</code>)</p>
+<h2 id="1-architecture-overview">1. Architecture Overview</h2>
+<p>FreeIPA runs inside a rootful Podman container on the Debian host lux. Because the host only has a single public IP address (149.84.129.206) bound directly to its physical NIC, the container cannot share the host's network directly (<code>--net=host</code> is blocked by required user-namespace remapping) and cannot use macvlan (would conflict with the host's own IP). Instead:</p>
+<ul>
+<li>The container runs on a dedicated Podman bridge network (<code>ipanet</code>, subnet <code>10.89.0.0/24</code>) with a static internal IP <code>10.89.0.10</code>.</li>
+<li>FreeIPA is installed and internally configured using that internal IP (<code>--ip-address=10.89.0.10</code>), so all of FreeIPA's self-referential checks (hostname resolution, CA subject, Kerberos principals) are internally consistent.</li>
+<li>The container's ports are published (<code>-p</code>) to the host's public IP, <code>149.84.129.206</code>, so external clients connect to the real static IP and Podman forwards that traffic into the container.</li>
+<li>The container runs read-only with tmpfs for <code>/run</code> and <code>/tmp</code>, and a bind-mounted <code>/data</code> directory holding all persistent FreeIPA state (databases, certs, configs, logs).</li>
+</ul>
+<p><strong>Why not <code>--ip-address=149.84.129.206</code> directly?</strong> FreeIPA's installer validates that <code>&lt;hostname&gt;</code> resolves to one of the <code>--ip-address</code> values you give it. With bridge networking, the container can't see the host's real IP on any of its own interfaces, and pointing <code>--add-host</code> at the real public IP causes a hairpin-NAT hang (the CA setup step tries to reach the directory server via <code>ldap://lux.alfred.edu:389</code>, which loops out through the host's NAT and back in — something Podman's bridge networking does not support). Using the internal container IP for both <code>--ip-address</code> and <code>--add-host</code> avoids this entirely, and does not affect external reachability, since Kerberos/LDAP/HTTPS all authenticate by hostname, not by baked-in IP address.</p>
+<h2 id="2-prerequisites-on-the-debian-host">2. Prerequisites on the Debian Host</h2>
+<pre><code class="language-bash">sudo apt update
+sudo apt install -y podman
+</code></pre>
+<p>Enable Docker/Podman user namespace remapping in <code>/etc/docker/daemon.json</code> if not already present (required for the FreeIPA container's read-only + systemd/cgroup setup):</p>
+<pre><code class="language-json">{ &quot;userns-remap&quot;: &quot;default&quot; }
+</code></pre>
+<p>(This applies to Docker; Podman rootful mode with <code>--read-only</code> + explicit cgroup/tmpfs mounts as shown below does not require this setting to be duplicated for Podman itself.)</p>
+<p>Ensure <code>lux.alfred.edu</code> resolves to <code>149.84.129.206</code> for anyone connecting to the server (via campus DNS A record, or <code>/etc/hosts</code> on each client machine, since this deployment does not run FreeIPA's integrated DNS server).</p>
+<h2 id="3-one-time-setup-commands">3. One-Time Setup Commands</h2>
+<h3 id="31-create-the-dedicated-podman-network">3.1 Create the dedicated Podman network</h3>
+<pre><code class="language-bash">sudo podman network create --subnet 10.89.0.0/24 --disable-dns ipanet
+</code></pre>
+<p>(<code>--disable-dns</code> avoids a port-53 conflict between Podman's internal aardvark-dns helper and FreeIPA's own DNS-related services.)</p>
+<h3 id="32-create-the-data-directory-and-install-options-file">3.2 Create the data directory and install-options file</h3>
+<pre><code class="language-bash">sudo mkdir -p /home/csadmin/ipa-data
+
+sudo tee /home/csadmin/ipa-data/ipa-server-install-options &lt;&lt;'EOF'
+--ip-address=10.89.0.10
+--realm=ALFRED.EDU
+--ds-password=YOUR_DS_PASSWORD_HERE
+--admin-password=YOUR_ADMIN_PASSWORD_HERE
+--unattended
+EOF
+
+sudo chmod 600 /home/csadmin/ipa-data/ipa-server-install-options
+</code></pre>
+<p><strong>Important:</strong> Replace both password placeholders with real, unique passwords before running. This file is only read the first time the container initializes <code>/data</code> — if <code>/data</code> already contains a configured FreeIPA instance, this file is ignored on subsequent starts.</p>
+<h3 id="33-run-the-container">3.3 Run the container</h3>
+<pre><code class="language-bash">sudo podman run --name freeipa-server-container -d \
+  -h lux.alfred.edu \
+  --read-only \
+  -v /home/csadmin/ipa-data:/data:Z \
+  -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+  --tmpfs /run --tmpfs /tmp \
+  --network ipanet --ip 10.89.0.10 \
+  --add-host lux.alfred.edu:10.89.0.10 \
+  --sysctl net.ipv6.conf.all.disable_ipv6=0 \
+  --sysctl net.ipv6.conf.lo.disable_ipv6=0 \
+  -p 53:53/udp -p 53:53 \
+  -p 80:80 -p 443:443 \
+  -p 389:389 -p 636:636 \
+  -p 88:88 -p 88:88/udp \
+  -p 464:464 -p 464:464/udp \
+  -p 123:123/udp \
+  docker.io/freeipa/freeipa-server:rocky-9
+</code></pre>
+<p>The first startup runs <code>ipa-server-install</code> automatically using the options file above. This takes 5–10 minutes. Do not interrupt it.</p>
+<h3 id="34-watch-progress">3.4 Watch progress</h3>
+<pre><code class="language-bash">sudo podman logs -f freeipa-server-container
+</code></pre>
+<p>Look for the final banner:</p>
+<pre><code>==============================================================================
+Setup complete
+</code></pre>
+<p>If it fails partway through, see the Troubleshooting section below.</p>
+<h2 id="4-day-to-day-operations">4. Day-to-Day Operations</h2>
+<h3 id="41-check-container-status">4.1 Check container status</h3>
+<pre><code class="language-bash">sudo podman ps
+</code></pre>
+<p>Should show <code>freeipa-server-container</code> as Up with all the port mappings listed.</p>
+<h3 id="42-if-the-container-is-down-or-crashed-restart-it">4.2 If the container is down or crashed: restart it</h3>
+<p>This is the command you'll use 95% of the time when something goes wrong. As long as nobody has deleted the container (see below), it still exists — it's just stopped — and all its state is intact.</p>
+<pre><code class="language-bash">sudo podman start freeipa-server-container
+</code></pre>
+<p>Confirm it's back up:</p>
+<pre><code class="language-bash">sudo podman ps
+</code></pre>
+<p>Watch it come back online, especially useful if it crashed mid-operation and you want to see what happened:</p>
+<pre><code class="language-bash">sudo podman logs -f freeipa-server-container
+</code></pre>
+<p>Manual stop (e.g., for host maintenance):</p>
+<pre><code class="language-bash">sudo podman stop freeipa-server-container
+</code></pre>
+<p>Data persists across stop/start since it's stored in the bind-mounted <code>/home/csadmin/ipa-data</code> directory. Do not <code>rm -rf</code> that directory unless you intend to wipe and reinstall from scratch.</p>
+<h3 id="43-if-the-container-was-deleted-podman-rm-recreate-it">4.3 If the container was deleted (<code>podman rm</code>): recreate it</h3>
+<p><code>podman start</code> only works if the container object still exists. If someone ran <code>podman rm</code> or <code>podman rm -f</code> on it, the container itself is gone (though your data in <code>/home/csadmin/ipa-data</code> is untouched, since it lives outside the container). In that case, you need to run the full <code>podman run</code> command again — see Section 3.3 or Section 5 (systemd unit) below. It will not re-run <code>ipa-server-install</code>, since <code>/home/csadmin/ipa-data</code> already contains a fully configured FreeIPA instance — it just detects that and starts the existing services directly.</p>
+<p>Quick summary:</p>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Container stopped/crashed but still exists</td>
+<td><code>podman start freeipa-server-container</code></td>
+</tr>
+<tr>
+<td>Container was deleted (<code>podman rm</code>)</td>
+<td>Full <code>podman run ...</code> command again (Section 3.3), or restart the systemd unit if configured (Section 5)</td>
+</tr>
+<tr>
+<td>Host rebooted</td>
+<td>Automatic, only if the systemd unit in Section 5 is set up — otherwise, manual <code>podman start</code> needed after boot</td>
+</tr>
+</tbody>
+</table>
+<h3 id="44-view-logs">4.4 View logs</h3>
+<pre><code class="language-bash">sudo podman logs freeipa-server-container | tail -100
+</code></pre>
+<h2 id="5-making-the-container-survive-crashes-and-reboots">5. Making the Container Survive Crashes and Reboots</h2>
+<p>By default, a freshly-created Podman container has no restart policy — check with:</p>
+<pre><code class="language-bash">sudo podman inspect freeipa-server-container --format '{{.HostConfig.RestartPolicy.Name}}'
+</code></pre>
+<p>If this prints <code>no</code>, then:</p>
+<ul>
+<li>If the container crashes, Podman will not bring it back automatically.</li>
+<li>If the host reboots (power outage, kernel update, maintenance), the container will not start automatically — it just sits stopped until someone manually runs <code>podman start</code>.</li>
+</ul>
+<p>For a lab server other students depend on for authentication, this should be fixed so the server is self-healing.</p>
+<h3 id="51-recommended-generate-a-systemd-unit-survives-host-reboots">5.1 Recommended: generate a systemd unit (survives host reboots)</h3>
+<p>This is the most reliable way to make a Podman container persistent on a Linux host, since it hooks into the same init system that manages everything else on boot.</p>
+<pre><code class="language-bash">sudo podman stop freeipa-server-container
+sudo podman rm freeipa-server-container
+</code></pre>
+<p>Re-run the original container command from Section 3.3 (without <code>-d</code> is fine too, systemd will manage backgrounding), then generate and install the unit:</p>
+<pre><code class="language-bash">sudo podman generate systemd --new --name freeipa-server-container --files
+sudo mv container-freeipa-server-container.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now container-freeipa-server-container.service
+</code></pre>
+<p>This creates a systemd service that:</p>
+<ul>
+<li>Starts the container automatically on host boot</li>
+<li>Restarts it automatically if it crashes</li>
+</ul>
+<p>Can be managed with standard systemd commands going forward:</p>
+<pre><code class="language-bash">sudo systemctl status container-freeipa-server-container.service
+sudo systemctl restart container-freeipa-server-container.service
+sudo systemctl stop container-freeipa-server-container.service
+</code></pre>
+<h3 id="52-simpler-alternative-restartalways-flag">5.2 Simpler alternative: <code>--restart=always</code> flag</h3>
+<p>If you don't want to deal with systemd, adding <code>--restart=always</code> to the <code>podman run</code> command (see Section 3.3) will make Podman restart the container automatically if it crashes while the Podman service itself is running. This is easier to set up but is less robust across actual host reboots than the systemd approach above — Podman's own documentation recommends the systemd route for anything meant to survive a reboot reliably.</p>
+<h2 id="6-accessing-the-server">6. Accessing the Server</h2>
+<h3 id="61-web-ui-from-any-machine-on-the-network">6.1 Web UI (from any machine on the network)</h3>
+<pre><code>https://149.84.129.206/ipa/ui/
+</code></pre>
+<p>Your browser will show a self-signed certificate warning — this is expected, since the CA was configured with Chaining: self-signed. Accept the exception, or better, distribute the CA cert (<code>/root/cacert.p12</code> inside the container) to client machines' trust stores.</p>
+<p>Log in with username <code>admin</code> and the admin password you set in the options file.</p>
+<h3 id="62-rootterminal-access-inside-the-container">6.2 Root/terminal access inside the container</h3>
+<pre><code class="language-bash">sudo podman exec -it freeipa-server-container bash
+</code></pre>
+<p>This drops you into a root shell inside the running container. From here you can run all standard IPA CLI tools.</p>
+<h3 id="63-authenticate-to-ipa-via-kerberos-inside-the-container">6.3 Authenticate to IPA via Kerberos (inside the container)</h3>
+<pre><code class="language-bash">kinit admin
+</code></pre>
+<p>Enter the admin password when prompted. Verify with:</p>
+<pre><code class="language-bash">klist
+</code></pre>
+<p>You should see a valid ticket for <code>admin@ALFRED.EDU</code>.</p>
+<h3 id="64-common-ipa-cli-commands-run-after-kinit-admin">6.4 Common IPA CLI commands (run after <code>kinit admin</code>)</h3>
+<pre><code class="language-bash">ipa user-find admin        # look up a user
+ipa user-add jdoe --first=John --last=Doe --password   # add a new user
+ipa group-add students     # create a group
+ipa host-add client1.alfred.edu --ip-address=&lt;client-ip&gt;   # pre-register a client
+</code></pre>
+<h3 id="65-exit-the-container-shell">6.5 Exit the container shell</h3>
+<pre><code class="language-bash">exit
+</code></pre>
+<p>This returns you to the Debian host shell. The container keeps running in the background.</p>
+<h2 id="7-backups">7. Backups</h2>
+<p>Back up the CA certificate bundle — required to create replicas or recover from disaster:</p>
+<pre><code class="language-bash">sudo podman cp freeipa-server-container:/root/cacert.p12 /home/csadmin/cacert-backup.p12
+</code></pre>
+<p>Store this somewhere safe outside the container/host (e.g., encrypted off-host storage). The password protecting this file is the Directory Manager (<code>--ds-password</code>) password.</p>
+<p>Full data backup (stop the container first for consistency):</p>
+<pre><code class="language-bash">sudo podman stop freeipa-server-container
+sudo tar czf /home/csadmin/ipa-data-backup-$(date +%F).tar.gz -C /home/csadmin ipa-data
+sudo podman start freeipa-server-container
+</code></pre>
+<h2 id="8-enrolling-client-machines">8. Enrolling Client Machines</h2>
+<p>On each lab client machine (must have <code>freeipa-client</code> or equivalent installed):</p>
+<p>Ensure <code>lux.alfred.edu</code> resolves to <code>149.84.129.206</code> (via <code>/etc/hosts</code> or campus DNS).</p>
+<p>Run:</p>
+<pre><code class="language-bash">sudo ipa-client-install --server=lux.alfred.edu --domain=alfred.edu --realm=ALFRED.EDU --mkhomedir
+</code></pre>
+<p>Follow the interactive prompts, or pre-register the host on the server first with <code>ipa host-add</code> (see 6.4) and use a one-time password for unattended enrollment.</p>
+<h2 id="9-firewall-network-requirements">9. Firewall / Network Requirements</h2>
+<p>Make sure the Debian host's firewall allows these ports (already published via <code>-p</code> in the run command, but the host's own firewall — ufw/nftables/iptables — must also permit them):</p>
+<table>
+<thead>
+<tr>
+<th>Port</th>
+<th>Protocol</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>80, 443</td>
+<td>TCP</td>
+<td>HTTP/HTTPS (web UI, ACME)</td>
+</tr>
+<tr>
+<td>389, 636</td>
+<td>TCP</td>
+<td>LDAP / LDAPS</td>
+</tr>
+<tr>
+<td>88, 464</td>
+<td>TCP + UDP</td>
+<td>Kerberos (KDC, kpasswd)</td>
+</tr>
+<tr>
+<td>53</td>
+<td>TCP + UDP</td>
+<td>DNS (published but unused — this deployment does not run integrated DNS)</td>
+</tr>
+<tr>
+<td>123</td>
+<td>UDP</td>
+<td>NTP (time sync, required for Kerberos)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="10-known-issues-encountered-during-setup-for-future-reference">10. Known Issues Encountered During Setup (for future reference)</h2>
+<p>These are documented so future maintainers don't have to rediscover them:</p>
+<ul>
+<li><strong>Docker <code>--net=host</code> + userns-remap conflict.</strong> Rootful Docker refuses to combine host networking with user namespace remapping. FreeIPA's read-only + systemd/cgroup requirements need userns-remap, so host networking was abandoned in favor of a dedicated bridge network.</li>
+<li><strong>Podman rootless port-binding restriction.</strong> Rootless Podman cannot bind privileged ports (&lt;1024) like 53, 80, 389, 88. Solution: run Podman rootful (<code>sudo podman ...</code>).</li>
+<li><strong>IPv6 loopback missing.</strong> The CA setup step needs <code>::1</code> on the container's <code>lo</code> interface. Fixed with <code>--sysctl net.ipv6.conf.all.disable_ipv6=0 --sysctl net.ipv6.conf.lo.disable_ipv6=0</code>.</li>
+<li><strong>Hairpin NAT hang.</strong> When <code>--add-host</code> pointed at the real external IP, pkispawn's LDAP connection attempt (<code>ldap://lux.alfred.edu:389</code>) hung indefinitely trying to loop back through the host's NAT/port-forwarding. Fixed by using a dedicated network with a static internal container IP instead.</li>
+<li><strong>Hostname/IP validation mismatch.</strong> <code>ipa-server-install</code> requires the hostname to resolve to one of the <code>--ip-address</code> values given. Using the container's internal IP for both resolved this permanently.</li>
+<li><strong>Unattended mode requires explicit <code>-r</code>/<code>-p</code>/<code>-a</code>.</strong> <code>--unattended</code> will not fall back to interactive prompts or environment-variable passwords — <code>--realm</code>, <code>--ds-password</code>, and <code>--admin-password</code> must all be explicitly present in the options file.</li>
+<li><strong>Options file lives in <code>/data</code>.</strong> Wiping <code>/home/csadmin/ipa-data</code> (e.g., to retry a failed install) also deletes <code>ipa-server-install-options</code> — it must be recreated before each fresh attempt.</li>
+<li><strong>No restart policy by default.</strong> A freshly-created Podman container has no restart policy (<code>podman inspect ... RestartPolicy.Name</code> returns <code>no</code>). Without fixing this, a host reboot or crash leaves the server down until someone manually runs <code>podman start</code>. See Section 5 for the systemd-based fix.</li>
+</ul></div>
             </div>
         </div>
 
