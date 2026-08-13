@@ -39,11 +39,11 @@ sudo mdadm --detail --scan | sudo tee -a /etc/mdadm/mdadm.conf
 
 # FreeIPA Lab Server Documentation
 
-**Host:** lux.alfred.edu (149.84.129.206)
-**Realm:** ALFRED.EDU
-**Domain:** alfred.edu
-**Container engine:** Podman (rootful)
-**Base OS:** Debian (host), Rocky Linux 9 (container image: freeipa/freeipa-server:rocky-9)
+**Host:** lux.alfred.edu (149.84.129.206)  
+**Realm:** ALFRED.EDU  
+**Domain:** alfred.edu  
+**Container engine:** Podman (rootful)  
+**Base OS:** Debian (host), Rocky Linux 9 (container image: `freeipa/freeipa-server:rocky-9`)
 
 ## 1. Architecture Overview
 
