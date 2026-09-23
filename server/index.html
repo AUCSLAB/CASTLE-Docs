@@ -377,11 +377,79 @@ sudo tar czf /home/csadmin/ipa-data-backup-$(date +%F).tar.gz -C /home/csadmin i
 sudo podman start freeipa-server-container
 </code></pre>
 <h2 id="8-enrolling-client-machines">8. Enrolling Client Machines</h2>
-<p>On each lab client machine (must have <code>freeipa-client</code> or equivalent installed):</p>
-<p>Ensure <code>lux.alfred.edu</code> resolves to <code>149.84.129.206</code> (via <code>/etc/hosts</code> or campus DNS).</p>
-<p>Run:</p>
+<h3 id="81-prerequisites-on-the-client-manual-steps">8.1 Prerequisites on the client (manual steps)</h3>
+<p>Type su and enter the admin password</p>
+<p><strong>Step 1 — Set the hostname as a lowercase FQDN.</strong>
+<code>ipa-client-install</code> requires the hostname to be a fully qualified domain name (<code>&lt;name&gt;.alfred.edu</code>, not a short name like <code>debian</code>), and it must be <strong>all lowercase</strong> — it will reject a hostname like <code>CLIENT1.alfred.edu</code> or <code>Client1.alfred.edu</code> outright with <code>Invalid hostname '...', must be lower-case</code>.</p>
+<pre><code class="language-bash">hostnamectl set-hostname &lt;clientname&gt;.alfred.edu
+</code></pre>
+<p>Always use a lowercase <code>&lt;clientname&gt;</code> (e.g. <code>client1</code>, <code>comp1</code>, <code>castle</code> — not <code>Client1</code> or <code>CLIENT1</code>).</p>
+<p><strong>Step 2 — Fix <code>/etc/hosts</code>.</strong>
+Right after setting the hostname, <code>hostname -f</code> will almost always fail with <code>hostname: Name or service not known</code> — this is expected. Setting the hostname with <code>hostnamectl</code> does <strong>not</strong> create a DNS/hosts entry for it; <code>hostname -f</code> needs something to actually resolve the name to an IP, and nothing does that yet.</p>
+<p>Open the file for editing:</p>
+<pre><code class="language-bash">nano /etc/hosts
+</code></pre>
+<p>You'll typically see something like:</p>
+<pre><code>127.0.0.1   localhost
+127.0.1.1   debian
+</code></pre>
+<p><strong>Edit the <code>127.0.1.1</code> line</strong> to match your new FQDN and short name (replace <code>debian</code> — or whatever stale short name is there — with your new hostname), and <strong>add a line for the FreeIPA server</strong>. The file should end up looking like:</p>
+<pre><code>127.0.0.1   localhost
+127.0.1.1   client1.alfred.edu client1
+
+149.84.129.206  lux.alfred.edu lux
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+</code></pre>
+<p>Save and exit (in <code>nano</code>: <code>Ctrl+O</code>, <code>Enter</code>, then <code>Ctrl+X</code>).</p>
+<p>Step 3 — Verify hostname -f now resolves.</p>
+<pre><code class="language-bash">hostname -f
+</code></pre>
+<p>This should print your FQDN cleanly (e.g. client1.alfred.edu) with no error. Do not proceed to enrollment until this works — if ipa-client-install is run while this is broken, it will fail early with a hostname-related error.</p>
+<p>Step 4 — Verify the FreeIPA server resolves and is reachable.</p>
+<pre><code class="language-bash">getent hosts lux.alfred.edu
+ping -c 2 149.84.129.206
+nc -zv -w5 149.84.129.206 389
+</code></pre>
+<p>If ping or the port check fails, do not proceed — see Section 11, item 9 (Docker/Podman iptables conflict) and Section 10 (firewall ports) before troubleshooting further.</p>
+<h3 id="82-install-the-freeipa-client-package">8.2 Install the FreeIPA client package</h3>
+<pre><code class="language-bash">sudo apt update
+sudo apt install -y freeipa-client
+</code></pre>
+<h3 id="83-run-the-installer-with-home-directory-auto-creation-enabled">8.3 Run the installer, with home-directory auto-creation enabled</h3>
 <pre><code class="language-bash">sudo ipa-client-install --server=lux.alfred.edu --domain=alfred.edu --realm=ALFRED.EDU --mkhomedir
 </code></pre>
+<blockquote>
+<p><strong>Always include <code>--mkhomedir</code>.</strong> Without it, PAM is never configured to create home directories on first login, and users get stuck in a login loop (SSSD authenticates them, but the shell can't spawn with no home directory, so it silently kicks back to the login prompt). See Section 8.6 if you forgot this flag and need to add it after the fact.</p>
+</blockquote>
+<h3 id="84-prompts-you-will-see-and-exactly-what-to-type">8.4 Prompts you will see, and exactly what to type</h3>
+<pre><code>WARNING: conflicting time&amp;date synchronization service 'ntp' will be disabled in favor of chronyd
+</code></pre>
+<p>Informational only — no action needed, it proceeds automatically.</p>
+<pre><code>Autodiscovery of servers for failover cannot work with this configuration.
+...
+Proceed with fixed values and no DNS discovery? [no]: yes
+</code></pre>
+<p>Type <strong><code>yes</code></strong>. This is expected since the server doesn't run integrated DNS for SRV-record autodiscovery.</p>
+<pre><code>Do you want to configure chrony with NTP server or pool address? [no]:
+</code></pre>
+<p>Just press <strong>Enter</strong> (accept the default <code>no</code>). The default chrony configuration is sufficient.</p>
+<pre><code>Client hostname: &lt;clientname&gt;.alfred.edu
+Realm: ALFRED.EDU
+DNS Domain: alfred.edu
+IPA Server: lux.alfred.edu
+BaseDN: dc=alfred,dc=edu
+
+Continue to configure the system with these values? [no]: yes
+</code></pre>
+<p>Type <strong><code>yes</code></strong>. Confirm the values shown match what you expect.</p>
+<pre><code>User authorized to enroll computers: admin
+</code></pre>
+<p>Type <strong><code>admin</code></strong>.</p>
+<p>Password for admin@ALFRED.EDU:</p>
 <p>Follow the interactive prompts, or pre-register the host on the server first with <code>ipa host-add</code> (see 6.4) and use a one-time password for unattended enrollment.</p>
 <h2 id="9-firewall-network-requirements">9. Firewall / Network Requirements</h2>
 <p>Make sure the Debian host's firewall allows these ports (already published via <code>-p</code> in the run command, but the host's own firewall — ufw/nftables/iptables — must also permit them):</p>
