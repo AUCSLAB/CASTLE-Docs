@@ -317,7 +317,7 @@ sudo podman start freeipa-server-container
 
 ## 8. Enrolling Client Machines
 
-GO TO SECTION 10 IF YOU WANT TO THE SCRIPT TO DO ALL OF THE ENROLLING
+GO TO SECTION 10 IF YOU WANT THE SCRIPT TO DO ALL OF THE ENROLLING
 
 ### 8.1 Prerequisites on the client (manual steps)
 
