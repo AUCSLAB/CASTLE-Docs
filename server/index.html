@@ -104,12 +104,8 @@
               </ul>
             </li>
             
-            <li class="nav-item" data-bs-level="1"><a href="#castle-centralized-authentication-storage-and-roaming-home-directory-runbook" class="nav-link">CASTLE Centralized Authentication, Storage, and Roaming Home Directory Runbook</a>
+            <li class="nav-item" data-bs-level="1"><a href="#nfsroaming-home-directory" class="nav-link">NFS,Roaming Home Directory</a>
               <ul class="nav flex-column">
-            <li class="nav-item" data-bs-level="2"><a href="#public-documentation-version" class="nav-link">Public Documentation Version</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
               </ul>
             </li>
             
@@ -612,8 +608,7 @@ sudo mount /dev/md0 /mnt/raid
 <p>Persist the configuration so it mounts automatically after a reboot:</p>
 <pre><code class="language-bash">sudo mdadm --detail --scan | sudo tee -a /etc/mdadm/mdadm.conf
 </code></pre>
-<h1 id="castle-centralized-authentication-storage-and-roaming-home-directory-runbook">CASTLE Centralized Authentication, Storage, and Roaming Home Directory Runbook</h1>
-<h2 id="public-documentation-version">Public Documentation Version</h2>
+<h1 id="nfsroaming-home-directory">NFS,Roaming Home Directory</h1>
 <p>This document describes the CASTLE Linux lab architecture for centralized authentication, RAID-backed student storage, NFS roaming home directories, FreeIPA automount, quotas, and automatic student-home provisioning.</p>
 <p>All deployment-specific and personally identifying information has been replaced with safe placeholders.</p>
 <p>The examples below use documentation-only values such as:</p>
