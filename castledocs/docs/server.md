@@ -376,7 +376,7 @@ ping -c 2 149.84.129.206
 nc -zv -w5 149.84.129.206 389
 ```
 
-If ping or the port check fails, do not proceed — see Section 11, item 9 (Docker/Podman iptables conflict) and Section 10 (firewall ports) before troubleshooting further.
+If ping or the port check fails, do not proceed — see Section 11, item 9 (Docker/Podman iptables conflict) and Section 11 (firewall ports) before troubleshooting further.
 
 
 ### 8.2 Install the FreeIPA client package
@@ -446,7 +446,209 @@ Make sure the Debian host's firewall allows these ports (already published via `
 | 53 | TCP + UDP | DNS (published but unused — this deployment does not run integrated DNS) |
 | 123 | UDP | NTP (time sync, required for Kerberos) |
 
-## 10. Known Issues Encountered During Setup (for future reference)
+
+
+
+## 10. Script to enroll client machines into FreeIPA
+
+```bash
+#READ THISSSSSSS
+
+## Copy the script over (scp, USB, git clone, whatever's convenient), then:
+chmod +x ipa-client-setup.sh
+
+sudo ./ipa-client-setup.sh
+
+#It'll prompt for the hostname interactively. Or skip the prompt:
+
+sudo ./ipa-client-setup.sh client5
+#PROMPTS YOU HAVE TO FOLLOW
+
+#Proceed with fixed values and no DNS discovery? [no]: yes
+
+#Do you want to configure chrony with NTP server or pool address? [no]:  (just press Enter)
+
+#Continue to configure the system with these values? [no]: yes
+
+#User authorized to enroll computers: admin
+
+#Password for admin@ALFRED.EDU: <type the actual password> FOR THE SERVER
+
+#!/usr/bin/env bash
+#
+# ipa-client-setup.sh
+#
+# Prepares a Debian/Linux machine and enrolls it as a FreeIPA client
+# for the ALFRED.EDU lab realm (server: lux.alfred.edu / 149.84.129.206).
+#
+# What it does:
+#   1. Asks for the short hostname you want for this machine (e.g. "client1")
+#   2. Sets the FQDN hostname (lowercase, enforced)
+#   3. Fixes /etc/hosts: removes stale/incorrect self-entries, adds a clean
+#      one, and ensures the lux.alfred.edu entry is present
+#   4. Verifies `hostname -f` resolves before doing anything else
+#   5. Installs the freeipa-client package if missing
+#   6. Runs ipa-client-install with --mkhomedir
+#
+# Run as root (or with sudo) on the client machine, while it's on the
+# same network as lux.alfred.edu.
+#
+# Usage:
+#   sudo ./ipa-client-setup.sh
+#   sudo ./ipa-client-setup.sh client1        # skip the hostname prompt
+
+set -euo pipefail
+
+# ---- Config: edit these if your lab's values ever change ----
+IPA_SERVER="lux.alfred.edu"
+IPA_SERVER_IP="149.84.129.206"
+IPA_DOMAIN="alfred.edu"
+IPA_REALM="ALFRED.EDU"
+# ----------------------------------------------------------------
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+info()  { echo -e "${GREEN}==>${NC} $*"; }
+warn()  { echo -e "${YELLOW}!!${NC} $*"; }
+fail()  { echo -e "${RED}XX${NC} $*"; exit 1; }
+
+# --- Must be root ---
+if [[ $EUID -ne 0 ]]; then
+    fail "Please run this script as root (e.g. sudo $0)"
+fi
+
+# --- Get desired short hostname ---
+if [[ -n "${1:-}" ]]; then
+    SHORT_NAME="$1"
+else
+    read -rp "Enter the short hostname for this machine (e.g. client1): " SHORT_NAME
+fi
+
+# Lowercase it, strip any accidental domain suffix the user might type
+SHORT_NAME=$(echo "$SHORT_NAME" | tr '[:upper:]' '[:lower:]' | sed "s/\.${IPA_DOMAIN}$//")
+FQDN="${SHORT_NAME}.${IPA_DOMAIN}"
+
+if [[ -z "$SHORT_NAME" ]]; then
+    fail "No hostname provided. Aborting."
+fi
+
+info "Target FQDN: $FQDN"
+
+# --- Detect this machine's primary IP ---
+info "Detecting this machine's IP address..."
+CLIENT_IP=$(ip addr show | grep "inet " | grep -v '127.0.0.1' | awk '{print $2}' | cut -d/ -f1 | head -n1)
+
+if [[ -z "$CLIENT_IP" ]]; then
+    warn "Could not auto-detect this machine's IP address."
+    read -rp "Enter this machine's IP address manually: " CLIENT_IP
+fi
+
+info "Using client IP: $CLIENT_IP"
+
+# --- Set the hostname (lowercase FQDN) ---
+info "Setting hostname to $FQDN ..."
+hostnamectl set-hostname "$FQDN"
+
+# --- Fix /etc/hosts ---
+info "Cleaning up /etc/hosts ..."
+
+HOSTS_FILE="/etc/hosts"
+BACKUP_FILE="/etc/hosts.bak.$(date +%s)"
+cp "$HOSTS_FILE" "$BACKUP_FILE"
+info "Backed up existing /etc/hosts to $BACKUP_FILE"
+
+# Remove any existing 127.0.1.1 line (old self-hostname entries, however malformed)
+sed -i '/^127\.0\.1\.1/d' "$HOSTS_FILE"
+
+# Remove any existing lux.alfred.edu line, so we can re-add a clean one
+sed -i "/${IPA_SERVER}/d" "$HOSTS_FILE"
+
+# Remove any stale line that already mentions this short name or FQDN
+sed -i "/[[:space:]]${SHORT_NAME}\$/d" "$HOSTS_FILE"
+sed -i "/${FQDN}/d" "$HOSTS_FILE"
+
+# Add clean entries
+{
+    echo "127.0.1.1       ${FQDN} ${SHORT_NAME}"
+    echo "${IPA_SERVER_IP}  ${IPA_SERVER} lux"
+} >> "$HOSTS_FILE"
+
+info "Updated /etc/hosts:"
+cat "$HOSTS_FILE"
+
+# --- Verify hostname -f resolves ---
+info "Verifying hostname -f resolves correctly..."
+RESOLVED_FQDN=$(hostname -f 2>&1) || true
+
+if [[ "$RESOLVED_FQDN" != "$FQDN" ]]; then
+    fail "hostname -f returned '$RESOLVED_FQDN', expected '$FQDN'. Check /etc/hosts manually and re-run."
+fi
+info "hostname -f resolves correctly: $RESOLVED_FQDN"
+
+# --- Verify lux.alfred.edu resolves ---
+info "Verifying ${IPA_SERVER} resolves..."
+if ! getent hosts "$IPA_SERVER" > /dev/null; then
+    fail "${IPA_SERVER} does not resolve. Check /etc/hosts manually and re-run."
+fi
+info "${IPA_SERVER} resolves correctly."
+
+# --- Basic connectivity check before attempting enrollment ---
+info "Checking connectivity to ${IPA_SERVER} (${IPA_SERVER_IP})..."
+if ping -c 2 -W 3 "$IPA_SERVER_IP" > /dev/null 2>&1; then
+    info "Ping to ${IPA_SERVER_IP} succeeded."
+else
+    warn "Ping to ${IPA_SERVER_IP} failed. Enrollment will likely fail too."
+    warn "Make sure this machine is on the same network as ${IPA_SERVER}."
+fi
+
+if command -v nc > /dev/null 2>&1; then
+    if nc -zv -w5 "$IPA_SERVER_IP" 389 2>&1 | grep -qi "succeeded\|open"; then
+        info "Port 389 (LDAP) reachable."
+    else
+        warn "Port 389 (LDAP) is not reachable. Enrollment will likely fail."
+        warn "See the lab documentation's 'Known Issues' section (Docker/Podman iptables conflict) if this is unexpected."
+    fi
+fi
+
+# --- Install freeipa-client if missing ---
+if ! command -v ipa-client-install > /dev/null 2>&1; then
+    info "Installing freeipa-client package..."
+    apt update
+    apt install -y freeipa-client
+else
+    info "freeipa-client already installed."
+fi
+
+# --- Run the enrollment ---
+info "Starting ipa-client-install ..."
+info "You will be prompted to confirm settings and enter the FreeIPA admin password."
+echo
+
+ipa-client-install \
+    --server="$IPA_SERVER" \
+    --domain="$IPA_DOMAIN" \
+    --realm="$IPA_REALM" \
+    --mkhomedir
+
+ENROLL_STATUS=$?
+
+if [[ $ENROLL_STATUS -eq 0 ]]; then
+    info "Enrollment succeeded! This machine is now a member of ${IPA_REALM}."
+    info "Note: DNS warnings about missing A/AAAA/SSHFP records are expected and harmless"
+    info "(this deployment does not run FreeIPA's integrated DNS server)."
+    echo
+    info "Verify with: kinit admin && klist"
+else
+    fail "ipa-client-install failed (exit code $ENROLL_STATUS). Check /var/log/ipaclient-install.log for details."
+fi
+```
+
+
+
+## 11. Known Issues Encountered During Setup (for future reference)
 
 These are documented so future maintainers don't have to rediscover them:
 
@@ -458,3 +660,5 @@ These are documented so future maintainers don't have to rediscover them:
 - **Unattended mode requires explicit `-r`/`-p`/`-a`.** `--unattended` will not fall back to interactive prompts or environment-variable passwords — `--realm`, `--ds-password`, and `--admin-password` must all be explicitly present in the options file.
 - **Options file lives in `/data`.** Wiping `/home/csadmin/ipa-data` (e.g., to retry a failed install) also deletes `ipa-server-install-options` — it must be recreated before each fresh attempt.
 - **No restart policy by default.** A freshly-created Podman container has no restart policy (`podman inspect ... RestartPolicy.Name` returns `no`). Without fixing this, a host reboot or crash leaves the server down until someone manually runs `podman start`. See Section 5 for the systemd-based fix.
+
+
