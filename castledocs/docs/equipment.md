@@ -17,3 +17,9 @@ This page is an inventory of all CASTLE Lab computer equipment.
 |----------|-----------------|
 | N/A      | 24-port Switch  |
 
+
+# Enrolled Hosts into FreeIPA
+
+| Number  
+|----------|
+| 9        |
