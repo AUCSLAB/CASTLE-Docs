@@ -317,15 +317,120 @@ sudo podman start freeipa-server-container
 
 ## 8. Enrolling Client Machines
 
-On each lab client machine (must have `freeipa-client` or equivalent installed):
 
-Ensure `lux.alfred.edu` resolves to `149.84.129.206` (via `/etc/hosts` or campus DNS).
+### 8.1 Prerequisites on the client (manual steps)
 
-Run:
+Type su and enter the admin password
+
+**Step 1 — Set the hostname as a lowercase FQDN.**
+`ipa-client-install` requires the hostname to be a fully qualified domain name (`<name>.alfred.edu`, not a short name like `debian`), and it must be **all lowercase** — it will reject a hostname like `CLIENT1.alfred.edu` or `Client1.alfred.edu` outright with `Invalid hostname '...', must be lower-case`.
+
+```bash
+hostnamectl set-hostname <clientname>.alfred.edu
+```
+Always use a lowercase `<clientname>` (e.g. `client1`, `comp1`, `castle` — not `Client1` or `CLIENT1`).
+
+**Step 2 — Fix `/etc/hosts`.**
+Right after setting the hostname, `hostname -f` will almost always fail with `hostname: Name or service not known` — this is expected. Setting the hostname with `hostnamectl` does **not** create a DNS/hosts entry for it; `hostname -f` needs something to actually resolve the name to an IP, and nothing does that yet.
+
+Open the file for editing:
+```bash
+nano /etc/hosts
+```
+
+You'll typically see something like:
+```
+127.0.0.1	localhost
+127.0.1.1	debian
+```
+
+**Edit the `127.0.1.1` line** to match your new FQDN and short name (replace `debian` — or whatever stale short name is there — with your new hostname), and **add a line for the FreeIPA server**. The file should end up looking like:
+```
+127.0.0.1	localhost
+127.0.1.1	client1.alfred.edu client1
+
+149.84.129.206	lux.alfred.edu lux
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+```
+
+Save and exit (in `nano`: `Ctrl+O`, `Enter`, then `Ctrl+X`).
+
+
+Step 3 — Verify hostname -f now resolves.
+
+```bash
+hostname -f
+```
+
+This should print your FQDN cleanly (e.g. client1.alfred.edu) with no error. Do not proceed to enrollment until this works — if ipa-client-install is run while this is broken, it will fail early with a hostname-related error.
+
+Step 4 — Verify the FreeIPA server resolves and is reachable.
+
+```bash
+getent hosts lux.alfred.edu
+ping -c 2 149.84.129.206
+nc -zv -w5 149.84.129.206 389
+```
+
+If ping or the port check fails, do not proceed — see Section 11, item 9 (Docker/Podman iptables conflict) and Section 10 (firewall ports) before troubleshooting further.
+
+
+### 8.2 Install the FreeIPA client package
+
+```bash
+sudo apt update
+sudo apt install -y freeipa-client
+```
+
+### 8.3 Run the installer, with home-directory auto-creation enabled
 
 ```bash
 sudo ipa-client-install --server=lux.alfred.edu --domain=alfred.edu --realm=ALFRED.EDU --mkhomedir
 ```
+
+> **Always include `--mkhomedir`.** Without it, PAM is never configured to create home directories on first login, and users get stuck in a login loop (SSSD authenticates them, but the shell can't spawn with no home directory, so it silently kicks back to the login prompt). See Section 8.6 if you forgot this flag and need to add it after the fact.
+
+### 8.4 Prompts you will see, and exactly what to type
+
+```
+WARNING: conflicting time&date synchronization service 'ntp' will be disabled in favor of chronyd
+```
+Informational only — no action needed, it proceeds automatically.
+
+```
+Autodiscovery of servers for failover cannot work with this configuration.
+...
+Proceed with fixed values and no DNS discovery? [no]: yes
+```
+Type **`yes`**. This is expected since the server doesn't run integrated DNS for SRV-record autodiscovery.
+
+```
+Do you want to configure chrony with NTP server or pool address? [no]:
+```
+Just press **Enter** (accept the default `no`). The default chrony configuration is sufficient.
+
+```
+Client hostname: <clientname>.alfred.edu
+Realm: ALFRED.EDU
+DNS Domain: alfred.edu
+IPA Server: lux.alfred.edu
+BaseDN: dc=alfred,dc=edu
+
+Continue to configure the system with these values? [no]: yes
+```
+Type **`yes`**. Confirm the values shown match what you expect.
+
+```
+User authorized to enroll computers: admin
+```
+
+Type **`admin`**.
+
+Password for admin@ALFRED.EDU:
 
 Follow the interactive prompts, or pre-register the host on the server first with `ipa host-add` (see 6.4) and use a one-time password for unattended enrollment.
 
