@@ -142,7 +142,11 @@
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-bs-level="2"><a href="#10-known-issues-encountered-during-setup-for-future-reference" class="nav-link">10. Known Issues Encountered During Setup (for future reference)</a>
+            <li class="nav-item" data-bs-level="2"><a href="#10-script-to-enroll-client-machines-into-freeipa" class="nav-link">10. Script to enroll client machines into FreeIPA</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#11-known-issues-encountered-during-setup-for-future-reference" class="nav-link">11. Known Issues Encountered During Setup (for future reference)</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -414,7 +418,7 @@ ff02::2 ip6-allrouters
 ping -c 2 149.84.129.206
 nc -zv -w5 149.84.129.206 389
 </code></pre>
-<p>If ping or the port check fails, do not proceed — see Section 11, item 9 (Docker/Podman iptables conflict) and Section 10 (firewall ports) before troubleshooting further.</p>
+<p>If ping or the port check fails, do not proceed — see Section 11, item 9 (Docker/Podman iptables conflict) and Section 11 (firewall ports) before troubleshooting further.</p>
 <h3 id="82-install-the-freeipa-client-package">8.2 Install the FreeIPA client package</h3>
 <pre><code class="language-bash">sudo apt update
 sudo apt install -y freeipa-client
@@ -489,7 +493,201 @@ Continue to configure the system with these values? [no]: yes
 </tr>
 </tbody>
 </table>
-<h2 id="10-known-issues-encountered-during-setup-for-future-reference">10. Known Issues Encountered During Setup (for future reference)</h2>
+<h2 id="10-script-to-enroll-client-machines-into-freeipa">10. Script to enroll client machines into FreeIPA</h2>
+<pre><code class="language-bash">#READ THISSSSSSS
+
+## Copy the script over (scp, USB, git clone, whatever's convenient), then:
+chmod +x ipa-client-setup.sh
+
+sudo ./ipa-client-setup.sh
+
+#It'll prompt for the hostname interactively. Or skip the prompt:
+
+sudo ./ipa-client-setup.sh client5
+#PROMPTS YOU HAVE TO FOLLOW
+
+#Proceed with fixed values and no DNS discovery? [no]: yes
+
+#Do you want to configure chrony with NTP server or pool address? [no]:  (just press Enter)
+
+#Continue to configure the system with these values? [no]: yes
+
+#User authorized to enroll computers: admin
+
+#Password for admin@ALFRED.EDU: &lt;type the actual password&gt; FOR THE SERVER
+
+#!/usr/bin/env bash
+#
+# ipa-client-setup.sh
+#
+# Prepares a Debian/Linux machine and enrolls it as a FreeIPA client
+# for the ALFRED.EDU lab realm (server: lux.alfred.edu / 149.84.129.206).
+#
+# What it does:
+#   1. Asks for the short hostname you want for this machine (e.g. &quot;client1&quot;)
+#   2. Sets the FQDN hostname (lowercase, enforced)
+#   3. Fixes /etc/hosts: removes stale/incorrect self-entries, adds a clean
+#      one, and ensures the lux.alfred.edu entry is present
+#   4. Verifies `hostname -f` resolves before doing anything else
+#   5. Installs the freeipa-client package if missing
+#   6. Runs ipa-client-install with --mkhomedir
+#
+# Run as root (or with sudo) on the client machine, while it's on the
+# same network as lux.alfred.edu.
+#
+# Usage:
+#   sudo ./ipa-client-setup.sh
+#   sudo ./ipa-client-setup.sh client1        # skip the hostname prompt
+
+set -euo pipefail
+
+# ---- Config: edit these if your lab's values ever change ----
+IPA_SERVER=&quot;lux.alfred.edu&quot;
+IPA_SERVER_IP=&quot;149.84.129.206&quot;
+IPA_DOMAIN=&quot;alfred.edu&quot;
+IPA_REALM=&quot;ALFRED.EDU&quot;
+# ----------------------------------------------------------------
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+info()  { echo -e &quot;${GREEN}==&gt;${NC} $*&quot;; }
+warn()  { echo -e &quot;${YELLOW}!!${NC} $*&quot;; }
+fail()  { echo -e &quot;${RED}XX${NC} $*&quot;; exit 1; }
+
+# --- Must be root ---
+if [[ $EUID -ne 0 ]]; then
+    fail &quot;Please run this script as root (e.g. sudo $0)&quot;
+fi
+
+# --- Get desired short hostname ---
+if [[ -n &quot;${1:-}&quot; ]]; then
+    SHORT_NAME=&quot;$1&quot;
+else
+    read -rp &quot;Enter the short hostname for this machine (e.g. client1): &quot; SHORT_NAME
+fi
+
+# Lowercase it, strip any accidental domain suffix the user might type
+SHORT_NAME=$(echo &quot;$SHORT_NAME&quot; | tr '[:upper:]' '[:lower:]' | sed &quot;s/\.${IPA_DOMAIN}$//&quot;)
+FQDN=&quot;${SHORT_NAME}.${IPA_DOMAIN}&quot;
+
+if [[ -z &quot;$SHORT_NAME&quot; ]]; then
+    fail &quot;No hostname provided. Aborting.&quot;
+fi
+
+info &quot;Target FQDN: $FQDN&quot;
+
+# --- Detect this machine's primary IP ---
+info &quot;Detecting this machine's IP address...&quot;
+CLIENT_IP=$(ip addr show | grep &quot;inet &quot; | grep -v '127.0.0.1' | awk '{print $2}' | cut -d/ -f1 | head -n1)
+
+if [[ -z &quot;$CLIENT_IP&quot; ]]; then
+    warn &quot;Could not auto-detect this machine's IP address.&quot;
+    read -rp &quot;Enter this machine's IP address manually: &quot; CLIENT_IP
+fi
+
+info &quot;Using client IP: $CLIENT_IP&quot;
+
+# --- Set the hostname (lowercase FQDN) ---
+info &quot;Setting hostname to $FQDN ...&quot;
+hostnamectl set-hostname &quot;$FQDN&quot;
+
+# --- Fix /etc/hosts ---
+info &quot;Cleaning up /etc/hosts ...&quot;
+
+HOSTS_FILE=&quot;/etc/hosts&quot;
+BACKUP_FILE=&quot;/etc/hosts.bak.$(date +%s)&quot;
+cp &quot;$HOSTS_FILE&quot; &quot;$BACKUP_FILE&quot;
+info &quot;Backed up existing /etc/hosts to $BACKUP_FILE&quot;
+
+# Remove any existing 127.0.1.1 line (old self-hostname entries, however malformed)
+sed -i '/^127\.0\.1\.1/d' &quot;$HOSTS_FILE&quot;
+
+# Remove any existing lux.alfred.edu line, so we can re-add a clean one
+sed -i &quot;/${IPA_SERVER}/d&quot; &quot;$HOSTS_FILE&quot;
+
+# Remove any stale line that already mentions this short name or FQDN
+sed -i &quot;/[[:space:]]${SHORT_NAME}\$/d&quot; &quot;$HOSTS_FILE&quot;
+sed -i &quot;/${FQDN}/d&quot; &quot;$HOSTS_FILE&quot;
+
+# Add clean entries
+{
+    echo &quot;127.0.1.1       ${FQDN} ${SHORT_NAME}&quot;
+    echo &quot;${IPA_SERVER_IP}  ${IPA_SERVER} lux&quot;
+} &gt;&gt; &quot;$HOSTS_FILE&quot;
+
+info &quot;Updated /etc/hosts:&quot;
+cat &quot;$HOSTS_FILE&quot;
+
+# --- Verify hostname -f resolves ---
+info &quot;Verifying hostname -f resolves correctly...&quot;
+RESOLVED_FQDN=$(hostname -f 2&gt;&amp;1) || true
+
+if [[ &quot;$RESOLVED_FQDN&quot; != &quot;$FQDN&quot; ]]; then
+    fail &quot;hostname -f returned '$RESOLVED_FQDN', expected '$FQDN'. Check /etc/hosts manually and re-run.&quot;
+fi
+info &quot;hostname -f resolves correctly: $RESOLVED_FQDN&quot;
+
+# --- Verify lux.alfred.edu resolves ---
+info &quot;Verifying ${IPA_SERVER} resolves...&quot;
+if ! getent hosts &quot;$IPA_SERVER&quot; &gt; /dev/null; then
+    fail &quot;${IPA_SERVER} does not resolve. Check /etc/hosts manually and re-run.&quot;
+fi
+info &quot;${IPA_SERVER} resolves correctly.&quot;
+
+# --- Basic connectivity check before attempting enrollment ---
+info &quot;Checking connectivity to ${IPA_SERVER} (${IPA_SERVER_IP})...&quot;
+if ping -c 2 -W 3 &quot;$IPA_SERVER_IP&quot; &gt; /dev/null 2&gt;&amp;1; then
+    info &quot;Ping to ${IPA_SERVER_IP} succeeded.&quot;
+else
+    warn &quot;Ping to ${IPA_SERVER_IP} failed. Enrollment will likely fail too.&quot;
+    warn &quot;Make sure this machine is on the same network as ${IPA_SERVER}.&quot;
+fi
+
+if command -v nc &gt; /dev/null 2&gt;&amp;1; then
+    if nc -zv -w5 &quot;$IPA_SERVER_IP&quot; 389 2&gt;&amp;1 | grep -qi &quot;succeeded\|open&quot;; then
+        info &quot;Port 389 (LDAP) reachable.&quot;
+    else
+        warn &quot;Port 389 (LDAP) is not reachable. Enrollment will likely fail.&quot;
+        warn &quot;See the lab documentation's 'Known Issues' section (Docker/Podman iptables conflict) if this is unexpected.&quot;
+    fi
+fi
+
+# --- Install freeipa-client if missing ---
+if ! command -v ipa-client-install &gt; /dev/null 2&gt;&amp;1; then
+    info &quot;Installing freeipa-client package...&quot;
+    apt update
+    apt install -y freeipa-client
+else
+    info &quot;freeipa-client already installed.&quot;
+fi
+
+# --- Run the enrollment ---
+info &quot;Starting ipa-client-install ...&quot;
+info &quot;You will be prompted to confirm settings and enter the FreeIPA admin password.&quot;
+echo
+
+ipa-client-install \
+    --server=&quot;$IPA_SERVER&quot; \
+    --domain=&quot;$IPA_DOMAIN&quot; \
+    --realm=&quot;$IPA_REALM&quot; \
+    --mkhomedir
+
+ENROLL_STATUS=$?
+
+if [[ $ENROLL_STATUS -eq 0 ]]; then
+    info &quot;Enrollment succeeded! This machine is now a member of ${IPA_REALM}.&quot;
+    info &quot;Note: DNS warnings about missing A/AAAA/SSHFP records are expected and harmless&quot;
+    info &quot;(this deployment does not run FreeIPA's integrated DNS server).&quot;
+    echo
+    info &quot;Verify with: kinit admin &amp;&amp; klist&quot;
+else
+    fail &quot;ipa-client-install failed (exit code $ENROLL_STATUS). Check /var/log/ipaclient-install.log for details.&quot;
+fi
+</code></pre>
+<h2 id="11-known-issues-encountered-during-setup-for-future-reference">11. Known Issues Encountered During Setup (for future reference)</h2>
 <p>These are documented so future maintainers don't have to rediscover them:</p>
 <ul>
 <li><strong>Docker <code>--net=host</code> + userns-remap conflict.</strong> Rootful Docker refuses to combine host networking with user namespace remapping. FreeIPA's read-only + systemd/cgroup requirements need userns-remap, so host networking was abandoned in favor of a dedicated bridge network.</li>
