@@ -40,9 +40,8 @@ sudo mdadm --detail --scan | sudo tee -a /etc/mdadm/mdadm.conf
 
 
 
-# CASTLE Centralized Authentication, Storage, and Roaming Home Directory Runbook
+# NFS,Roaming Home Directory
 
-## Public Documentation Version
 
 This document describes the CASTLE Linux lab architecture for centralized authentication, RAID-backed student storage, NFS roaming home directories, FreeIPA automount, quotas, and automatic student-home provisioning.
 
