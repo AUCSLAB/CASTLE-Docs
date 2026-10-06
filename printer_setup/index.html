@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Printer Setup - CASTLE Docs</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../style.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">CASTLE Docs</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href=".." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../about/" class="nav-link">About</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../practices/" class="nav-link">Practices</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../equipment/" class="nav-link">Equipment</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../pc_build/" class="nav-link">PC Build</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../server/" class="nav-link">Server</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../raid_setup/" class="nav-link">RAID Setup</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="./" class="nav-link active" aria-current="page">Printer Setup</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../raid_setup/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" class="nav-link disabled">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#castle-lab-printing-setup" class="nav-link">CASTLE Lab Printing Setup</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#overview" class="nav-link">Overview</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#1-server-side-setup" class="nav-link">1. Server-Side Setup</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#11-install-cups" class="nav-link">1.1 Install CUPS</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#2-verify-the-usb-printer" class="nav-link">2. Verify the USB Printer</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#3-find-an-available-printer-driver" class="nav-link">3. Find an Available Printer Driver</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#4-create-labprinter-on-lux" class="nav-link">4. Create LabPrinter on lux</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#5-test-printing-directly-from-lux" class="nav-link">5. Test Printing Directly from lux</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#6-share-labprinter" class="nav-link">6. Share LabPrinter</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#7-configure-cups-network-access" class="nav-link">7. Configure CUPS Network Access</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#8-fix-the-cups-hostname-bad-request-issue" class="nav-link">8. Fix the CUPS Hostname / Bad Request Issue</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#9-verify-the-printer-is-shared" class="nav-link">9. Verify the Printer Is Shared</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#10-configure-lab-computers" class="nav-link">10. Configure Lab Computers</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#11-disable-automatic-printer-discovery" class="nav-link">11. Disable Automatic Printer Discovery</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#12-configure-multiple-lab-computers-from-lux" class="nav-link">12. Configure Multiple Lab Computers from lux</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#13-freeipa-administrative-sudo-access" class="nav-link">13. FreeIPA Administrative Sudo Access</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#14-freeipa-sudo-rule" class="nav-link">14. FreeIPA Sudo Rule</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#15-refresh-sssd-after-sudo-changes" class="nav-link">15. Refresh SSSD After Sudo Changes</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#16-important-note-about-su-vs-sudo" class="nav-link">16. Important Note About su vs sudo</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#17-testing-a-client" class="nav-link">17. Testing a Client</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#18-printing-from-gui-applications" class="nav-link">18. Printing from GUI Applications</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#19-current-desired-client-state" class="nav-link">19. Current Desired Client State</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#20-current-desired-server-state" class="nav-link">20. Current Desired Server State</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#21-troubleshooting" class="nav-link">21. Troubleshooting</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#lpinfo-command-not-found" class="nav-link">lpinfo: command not found</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#ipp-everywhere-driver-requires-an-ipp-connection" class="nav-link">IPP Everywhere driver requires an IPP connection</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#unable-to-create-ppd-no-ipp-attributes" class="nav-link">Unable to create PPD: No IPP attributes</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#http11-400-bad-request" class="nav-link">HTTP/1.1 400 Bad Request</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#lpadmin-forbidden" class="nav-link">lpadmin: Forbidden</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#random-hptoshiba-printers-appear" class="nav-link">Random HP/Toshiba Printers Appear</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#freeipa-user-is-in-admins-but-cannot-use-sudo" class="nav-link">FreeIPA User Is in admins but Cannot Use sudo</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#22-new-machine-enrollment" class="nav-link">22. New Machine Enrollment</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#23-summary" class="nav-link">23. Summary</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="castle-lab-printing-setup">CASTLE Lab Printing Setup</h1>
+<h2 id="overview">Overview</h2>
+<p>The CASTLE Lab uses a centralized printing setup.</p>
+<p>The Lexmark printer is connected directly to the server <code>lux</code> using USB. The server runs CUPS and shares the printer with the Debian lab computers.</p>
+<p>The lab computers do not connect directly to the printer. Instead, they send print jobs to <code>lux</code>, and <code>lux</code> sends the jobs to the Lexmark printer over USB.</p>
+<p>Architecture:</p>
+<pre><code class="language-text">Lab Computer
+     |
+     | IPP / CUPS
+     v
+lux.alfred.edu
+     |
+     | USB
+     v
+Lexmark MS310/MS312 Series
+</code></pre>
+<p>The shared printer is named:</p>
+<pre><code class="language-text">LabPrinter
+</code></pre>
+<p>The FreeIPA server and print server are both:</p>
+<pre><code class="language-text">lux.alfred.edu
+</code></pre>
+<p>The server currently uses the static IP:</p>
+<pre><code class="language-text">149.84.129.206
+</code></pre>
+<hr />
+<h1 id="1-server-side-setup">1. Server-Side Setup</h1>
+<p>All commands in this section are run on:</p>
+<pre><code class="language-text">lux.alfred.edu
+</code></pre>
+<h2 id="11-install-cups">1.1 Install CUPS</h2>
+<p>Install CUPS and the CUPS client utilities:</p>
+<pre><code class="language-bash">sudo apt update
+sudo apt install cups cups-client
+</code></pre>
+<p>Enable and start CUPS:</p>
+<pre><code class="language-bash">sudo systemctl enable --now cups
+</code></pre>
+<p>Verify:</p>
+<pre><code class="language-bash">systemctl status cups
+</code></pre>
+<hr />
+<h1 id="2-verify-the-usb-printer">2. Verify the USB Printer</h1>
+<p>The Lexmark printer is physically connected to <code>lux</code> using USB.</p>
+<p>Check that Linux sees the printer:</p>
+<pre><code class="language-bash">lsusb
+</code></pre>
+<p>The printer appeared as:</p>
+<pre><code class="language-text">Lexmark International, Inc. Lexmark MS312dn
+</code></pre>
+<p>To find the CUPS device URI:</p>
+<pre><code class="language-bash">sudo /usr/sbin/lpinfo -v
+</code></pre>
+<p>The Lexmark USB URI was:</p>
+<pre><code class="language-text">usb://Lexmark/MS310%20Series?serial=45147GLM3V8KL
+</code></pre>
+<p>The model may display as <code>MS310 Series</code> even though the physical printer is an MS312dn.</p>
+<hr />
+<h1 id="3-find-an-available-printer-driver">3. Find an Available Printer Driver</h1>
+<p>The Lexmark is connected over USB, so the CUPS <code>everywhere</code> driver cannot be used directly.</p>
+<p>Running:</p>
+<pre><code class="language-bash">sudo /usr/sbin/lpinfo -m | grep -Ei 'Lexmark|MS310|MS312|Generic.*PostScript'
+</code></pre>
+<p>returned:</p>
+<pre><code class="language-text">drv:///sample.drv/generic.ppd Generic PostScript Printer
+</code></pre>
+<p>The Lexmark supports PostScript, so the Generic PostScript driver was used.</p>
+<hr />
+<h1 id="4-create-labprinter-on-lux">4. Create LabPrinter on lux</h1>
+<p>Create the printer:</p>
+<pre><code class="language-bash">sudo lpadmin \
+  -p LabPrinter \
+  -E \
+  -v 'usb://Lexmark/MS310%20Series?serial=45147GLM3V8KL' \
+  -m drv:///sample.drv/generic.ppd
+</code></pre>
+<p>CUPS may display:</p>
+<pre><code class="language-text">Printer drivers are deprecated and will stop working in a future version of CUPS.
+</code></pre>
+<p>This is a warning about future CUPS versions. It does not mean the current configuration failed.</p>
+<p>Set <code>LabPrinter</code> as the server default:</p>
+<pre><code class="language-bash">sudo lpadmin -d LabPrinter
+</code></pre>
+<p>Verify:</p>
+<pre><code class="language-bash">lpstat -t
+</code></pre>
+<p>The important lines should include:</p>
+<pre><code class="language-text">system default destination: LabPrinter
+device for LabPrinter: usb://Lexmark/MS310%20Series?serial=45147GLM3V8KL
+printer LabPrinter is idle
+</code></pre>
+<hr />
+<h1 id="5-test-printing-directly-from-lux">5. Test Printing Directly from lux</h1>
+<p>Send a simple test job:</p>
+<pre><code class="language-bash">echo &quot;CASTLE Lexmark printer test&quot; | lp -d LabPrinter
+</code></pre>
+<p>CUPS should return a request ID similar to:</p>
+<pre><code class="language-text">request id is LabPrinter-1
+</code></pre>
+<p>Verify that the page physically prints.</p>
+<hr />
+<h1 id="6-share-labprinter">6. Share LabPrinter</h1>
+<p>Mark the printer as shared:</p>
+<pre><code class="language-bash">sudo lpadmin -p LabPrinter -o printer-is-shared=true
+</code></pre>
+<p>Enable printer sharing globally:</p>
+<pre><code class="language-bash">sudo cupsctl --share-printers
+</code></pre>
+<p>Restart CUPS:</p>
+<pre><code class="language-bash">sudo systemctl restart cups
+</code></pre>
+<p>Verify:</p>
+<pre><code class="language-bash">lpstat -t
+</code></pre>
+<hr />
+<h1 id="7-configure-cups-network-access">7. Configure CUPS Network Access</h1>
+<p>The CUPS configuration is:</p>
+<pre><code class="language-text">/etc/cups/cupsd.conf
+</code></pre>
+<p>The important server-side settings are:</p>
+<pre><code class="language-text">Port 631
+Listen /run/cups/cups.sock
+Browsing On
+BrowseLocalProtocols dnssd
+WebInterface Yes
+</code></pre>
+<p>Access for local network clients is allowed with:</p>
+<pre><code class="language-text">&lt;Location /&gt;
+  Order allow,deny
+  Allow @LOCAL
+&lt;/Location&gt;
+</code></pre>
+<p>CUPS should be listening on TCP port 631.</p>
+<p>Verify:</p>
+<pre><code class="language-bash">sudo ss -ltnp | grep 631
+</code></pre>
+<p>Expected:</p>
+<pre><code class="language-text">0.0.0.0:631
+[::]:631
+</code></pre>
+<hr />
+<h1 id="8-fix-the-cups-hostname-bad-request-issue">8. Fix the CUPS Hostname / Bad Request Issue</h1>
+<p>Initially, clients could reach <code>lux</code>, but CUPS returned:</p>
+<pre><code class="language-text">HTTP/1.1 400 Bad Request
+</code></pre>
+<p>and commands such as:</p>
+<pre><code class="language-bash">lpstat -h lux.alfred.edu:631 -p
+</code></pre>
+<p>returned:</p>
+<pre><code class="language-text">Error - add '/version=1.1' to server name.
+</code></pre>
+<p>The actual issue was that CUPS was rejecting the HTTP <code>Host:</code> header for:</p>
+<pre><code class="language-text">lux.alfred.edu
+</code></pre>
+<p>Edit:</p>
+<pre><code class="language-bash">sudo nano /etc/cups/cupsd.conf
+</code></pre>
+<p>Add near the top:</p>
+<pre><code class="language-text">ServerName lux.alfred.edu
+ServerAlias lux.alfred.edu
+</code></pre>
+<p>For example:</p>
+<pre><code class="language-text">LogLevel warn
+ServerName lux.alfred.edu
+ServerAlias lux.alfred.edu
+
+PageLogFormat
+MaxLogSize 0
+ErrorPolicy retry-job
+
+Port 631
+Listen /run/cups/cups.sock
+</code></pre>
+<p>Restart CUPS:</p>
+<pre><code class="language-bash">sudo systemctl restart cups
+</code></pre>
+<p>Clients should then be able to communicate normally with:</p>
+<pre><code class="language-text">lux.alfred.edu:631
+</code></pre>
+<hr />
+<h1 id="9-verify-the-printer-is-shared">9. Verify the Printer Is Shared</h1>
+<p>On <code>lux</code>:</p>
+<pre><code class="language-bash">sudo grep -A20 -B5 LabPrinter /etc/cups/printers.conf
+</code></pre>
+<p>The <code>LabPrinter</code> section should contain:</p>
+<pre><code class="language-text">DeviceURI usb://Lexmark/MS310%20Series?serial=45147GLM3V8KL
+Accepting Yes
+Shared Yes
+</code></pre>
+<p>The actual server configuration should remain:</p>
+<pre><code class="language-text">LabPrinter -&gt; USB printer
+</code></pre>
+<p>Do not change <code>LabPrinter</code> on <code>lux</code> to point back to:</p>
+<pre><code class="language-text">ipp://lux.alfred.edu:631/printers/LabPrinter
+</code></pre>
+<p>That would create a loop where the print server points to itself.</p>
+<hr />
+<h1 id="10-configure-lab-computers">10. Configure Lab Computers</h1>
+<p>The controlled CASTLE Debian computers use <code>lux</code> as their central CUPS server.</p>
+<p>Current systems include:</p>
+<pre><code class="language-text">bedi.alfred.edu
+alan.alfred.edu
+ahmad.alfred.edu
+daniel.alfred.edu
+saron.alfred.edu
+dagim.alfred.edu
+garegin.alfred.edu
+kumar.alfred.edu
+</code></pre>
+<p>Install the CUPS client if necessary:</p>
+<pre><code class="language-bash">sudo apt install -y cups-client
+</code></pre>
+<p>Create:</p>
+<pre><code class="language-text">/etc/cups/client.conf
+</code></pre>
+<p>with:</p>
+<pre><code class="language-text">ServerName lux.alfred.edu:631
+</code></pre>
+<p>This can be done using:</p>
+<pre><code class="language-bash">echo 'ServerName lux.alfred.edu:631' | sudo tee /etc/cups/client.conf
+</code></pre>
+<p>After this, CUPS client programs send their requests directly to <code>lux</code>.</p>
+<hr />
+<h1 id="11-disable-automatic-printer-discovery">11. Disable Automatic Printer Discovery</h1>
+<p>The Alfred University network contains other discoverable printers, including HP and Toshiba printers.</p>
+<p>Without disabling discovery, the lab computers may display printers such as:</p>
+<pre><code class="language-text">HP_LaserJet_400_M401dne_1398E3
+TOSHIBA_e_STUDIO3525AC_15969935
+LabPrinter_lux
+</code></pre>
+<p>These may be automatically created by <code>cups-browsed</code>.</p>
+<p>Disable automatic printer discovery on each CASTLE machine:</p>
+<pre><code class="language-bash">sudo systemctl disable --now cups-browsed
+</code></pre>
+<p>After disabling it, verify:</p>
+<pre><code class="language-bash">lpstat -p
+lpstat -d
+</code></pre>
+<p>The desired output is:</p>
+<pre><code class="language-text">printer LabPrinter is idle
+system default destination: LabPrinter
+</code></pre>
+<p>In practice, disabling <code>cups-browsed</code> caused the unwanted auto-discovered queues to disappear automatically.</p>
+<hr />
+<h1 id="12-configure-multiple-lab-computers-from-lux">12. Configure Multiple Lab Computers from lux</h1>
+<p>Once the FreeIPA account <code>admin</code> has sudo privileges on the lab machines, the CUPS client configuration can be pushed from <code>lux</code>.</p>
+<p>Example:</p>
+<pre><code class="language-bash">for h in bedi alan ahmad daniel saron dagim garegin kumar; do
+  ssh -t admin@$h.alfred.edu \
+    &quot;echo 'ServerName lux.alfred.edu:631' | sudo tee /etc/cups/client.conf&quot;
+done
+</code></pre>
+<p>This requires entering the FreeIPA password for SSH and sudo.</p>
+<p>To disable <code>cups-browsed</code> on all machines:</p>
+<pre><code class="language-bash">for h in bedi alan ahmad daniel saron dagim garegin kumar; do
+  ssh -t admin@$h.alfred.edu '
+    sudo systemctl disable --now cups-browsed
+    lpstat -p
+    lpstat -d
+  '
+done
+</code></pre>
+<p>A machine that is powered off or unreachable may return:</p>
+<pre><code class="language-text">No route to host
+</code></pre>
+<p>It can simply be configured later.</p>
+<hr />
+<h1 id="13-freeipa-administrative-sudo-access">13. FreeIPA Administrative Sudo Access</h1>
+<p>The FreeIPA account:</p>
+<pre><code class="language-text">admin
+</code></pre>
+<p>was added to the existing FreeIPA group:</p>
+<pre><code class="language-text">admins
+</code></pre>
+<p>From the FreeIPA server/container:</p>
+<pre><code class="language-bash">ipa group-add-member admins --users=admin
+</code></pre>
+<p>Verify:</p>
+<pre><code class="language-bash">ipa group-show admins
+</code></pre>
+<p>The <code>admins</code> group should list:</p>
+<pre><code class="language-text">admin
+</code></pre>
+<hr />
+<h1 id="14-freeipa-sudo-rule">14. FreeIPA Sudo Rule</h1>
+<p>A FreeIPA sudo rule was created so members of the <code>admins</code> group can administer CASTLE machines.</p>
+<p>Create the rule:</p>
+<pre><code class="language-bash">ipa sudorule-add castle-admins \
+  --desc=&quot;Full sudo access for FreeIPA administrators&quot;
+</code></pre>
+<p>Add the <code>admins</code> group:</p>
+<pre><code class="language-bash">ipa sudorule-add-user castle-admins --groups=admins
+</code></pre>
+<p>Allow all commands:</p>
+<pre><code class="language-bash">ipa sudorule-mod castle-admins --cmdcat=all
+</code></pre>
+<p>Allow commands to run as any user:</p>
+<pre><code class="language-bash">ipa sudorule-mod castle-admins --runasusercat=all
+</code></pre>
+<p>Allow the rule on all FreeIPA hosts:</p>
+<pre><code class="language-bash">ipa sudorule-mod castle-admins --hostcat=all
+</code></pre>
+<p>Verify:</p>
+<pre><code class="language-bash">ipa sudorule-show castle-admins --all
+</code></pre>
+<p>Important fields should include:</p>
+<pre><code class="language-text">Enabled: True
+Host category: all
+Command category: all
+RunAs User category: all
+User Groups: admins
+</code></pre>
+<hr />
+<h1 id="15-refresh-sssd-after-sudo-changes">15. Refresh SSSD After Sudo Changes</h1>
+<p>Some clients did not immediately receive the new FreeIPA sudo rule because SSSD had cached the old information.</p>
+<p>On the affected client, become local root:</p>
+<pre><code class="language-bash">su
+</code></pre>
+<p>Clear the SSSD cache:</p>
+<pre><code class="language-bash">/usr/sbin/sss_cache -E
+</code></pre>
+<p>Restart SSSD:</p>
+<pre><code class="language-bash">systemctl restart sssd
+</code></pre>
+<p>Then completely log out and log back in as:</p>
+<pre><code class="language-text">admin
+</code></pre>
+<p>Verify group membership:</p>
+<pre><code class="language-bash">id
+</code></pre>
+<p>The output should include:</p>
+<pre><code class="language-text">admins
+labstudents
+</code></pre>
+<p>Verify sudo:</p>
+<pre><code class="language-bash">sudo -l
+</code></pre>
+<p>Expected:</p>
+<pre><code class="language-text">User admin may run the following commands:
+    (ALL) ALL
+</code></pre>
+<p>Then:</p>
+<pre><code class="language-bash">sudo whoami
+</code></pre>
+<p>should return:</p>
+<pre><code class="language-text">root
+</code></pre>
+<hr />
+<h1 id="16-important-note-about-su-vs-sudo">16. Important Note About <code>su</code> vs <code>sudo</code></h1>
+<p>The local Linux root password is independent from FreeIPA.</p>
+<p>Therefore:</p>
+<pre><code class="language-bash">su
+</code></pre>
+<p>may require a local root password that is different on each machine.</p>
+<p>Once the FreeIPA <code>castle-admins</code> sudo rule is working, local root access is normally unnecessary.</p>
+<p>Use:</p>
+<pre><code class="language-bash">ssh admin@machine.alfred.edu
+sudo command
+</code></pre>
+<p>instead.</p>
+<hr />
+<h1 id="17-testing-a-client">17. Testing a Client</h1>
+<p>On any CASTLE workstation:</p>
+<pre><code class="language-bash">lpstat -p
+</code></pre>
+<p>Expected:</p>
+<pre><code class="language-text">printer LabPrinter is idle
+</code></pre>
+<p>Check the default:</p>
+<pre><code class="language-bash">lpstat -d
+</code></pre>
+<p>Expected:</p>
+<pre><code class="language-text">system default destination: LabPrinter
+</code></pre>
+<p>Test printing:</p>
+<pre><code class="language-bash">echo &quot;CASTLE printer test&quot; | lp
+</code></pre>
+<p>The complete path is:</p>
+<pre><code class="language-text">Debian workstation
+       |
+       | CUPS / IPP
+       v
+lux.alfred.edu
+       |
+       | USB
+       v
+Lexmark MS310/MS312 Series
+</code></pre>
+<hr />
+<h1 id="18-printing-from-gui-applications">18. Printing from GUI Applications</h1>
+<p>Because <code>LabPrinter</code> is the system default printer, users should normally be able to open an application and press:</p>
+<pre><code class="language-text">Ctrl + P
+</code></pre>
+<p>The print dialog should show:</p>
+<pre><code class="language-text">LabPrinter
+</code></pre>
+<p>as the available/default printer.</p>
+<p>This applies to applications such as:</p>
+<ul>
+<li>Firefox / Chromium</li>
+<li>PDF viewers</li>
+<li>LibreOffice</li>
+<li>text editors</li>
+<li>other applications using the system print dialog</li>
+</ul>
+<hr />
+<h1 id="19-current-desired-client-state">19. Current Desired Client State</h1>
+<p>Each CASTLE lab machine should have:</p>
+<pre><code class="language-text">/etc/cups/client.conf
+</code></pre>
+<p>containing:</p>
+<pre><code class="language-text">ServerName lux.alfred.edu:631
+</code></pre>
+<p><code>cups-browsed</code> should be disabled:</p>
+<pre><code class="language-bash">systemctl is-enabled cups-browsed
+</code></pre>
+<p>Expected:</p>
+<pre><code class="language-text">disabled
+</code></pre>
+<p>The printer check should return:</p>
+<pre><code class="language-bash">lpstat -p
+lpstat -d
+</code></pre>
+<p>Expected:</p>
+<pre><code class="language-text">printer LabPrinter is idle
+system default destination: LabPrinter
+</code></pre>
+<hr />
+<h1 id="20-current-desired-server-state">20. Current Desired Server State</h1>
+<p>On <code>lux</code>:</p>
+<pre><code class="language-bash">lpstat -v LabPrinter
+</code></pre>
+<p>should return:</p>
+<pre><code class="language-text">device for LabPrinter: usb://Lexmark/MS310%20Series?serial=45147GLM3V8KL
+</code></pre>
+<p>The printer must remain shared:</p>
+<pre><code class="language-text">Shared Yes
+</code></pre>
+<p>The server must listen on port 631:</p>
+<pre><code class="language-bash">sudo ss -ltnp | grep 631
+</code></pre>
+<p>and <code>/etc/cups/cupsd.conf</code> should include:</p>
+<pre><code class="language-text">ServerName lux.alfred.edu
+ServerAlias lux.alfred.edu
+Port 631
+</code></pre>
+<hr />
+<h1 id="21-troubleshooting">21. Troubleshooting</h1>
+<h2 id="lpinfo-command-not-found"><code>lpinfo: command not found</code></h2>
+<p><code>lpinfo</code> is normally located in:</p>
+<pre><code class="language-text">/usr/sbin/lpinfo
+</code></pre>
+<p>Use:</p>
+<pre><code class="language-bash">sudo /usr/sbin/lpinfo -v
+</code></pre>
+<hr />
+<h2 id="ipp-everywhere-driver-requires-an-ipp-connection"><code>IPP Everywhere driver requires an IPP connection</code></h2>
+<p>This happens when attempting:</p>
+<pre><code class="language-bash">-m everywhere
+</code></pre>
+<p>against a USB printer.</p>
+<p>For the USB Lexmark on <code>lux</code>, use the Generic PostScript driver instead:</p>
+<pre><code class="language-bash">-m drv:///sample.drv/generic.ppd
+</code></pre>
+<hr />
+<h2 id="unable-to-create-ppd-no-ipp-attributes"><code>Unable to create PPD: No IPP attributes</code></h2>
+<p>Do not create an unnecessary local <code>-m everywhere</code> queue if the workstation is configured to use <code>lux</code> through:</p>
+<pre><code class="language-text">/etc/cups/client.conf
+</code></pre>
+<p>The workstation can simply use the central CUPS server.</p>
+<hr />
+<h2 id="http11-400-bad-request"><code>HTTP/1.1 400 Bad Request</code></h2>
+<p>Make sure <code>/etc/cups/cupsd.conf</code> on <code>lux</code> contains:</p>
+<pre><code class="language-text">ServerName lux.alfred.edu
+ServerAlias lux.alfred.edu
+</code></pre>
+<p>Then:</p>
+<pre><code class="language-bash">sudo systemctl restart cups
+</code></pre>
+<hr />
+<h2 id="lpadmin-forbidden"><code>lpadmin: Forbidden</code></h2>
+<p>If a workstation uses:</p>
+<pre><code class="language-text">ServerName lux.alfred.edu:631
+</code></pre>
+<p>then <code>lpadmin</code> may attempt to modify the CUPS configuration on <code>lux</code>.</p>
+<p>Remote printer administration is intentionally restricted.</p>
+<p>This does not indicate a printing problem.</p>
+<p>If:</p>
+<pre><code class="language-bash">lpstat -d
+</code></pre>
+<p>already returns:</p>
+<pre><code class="language-text">system default destination: LabPrinter
+</code></pre>
+<p>nothing needs to be changed.</p>
+<hr />
+<h2 id="random-hptoshiba-printers-appear">Random HP/Toshiba Printers Appear</h2>
+<p>Disable <code>cups-browsed</code>:</p>
+<pre><code class="language-bash">sudo systemctl disable --now cups-browsed
+</code></pre>
+<p>Then check:</p>
+<pre><code class="language-bash">lpstat -p
+</code></pre>
+<p>Only <code>LabPrinter</code> should remain.</p>
+<hr />
+<h2 id="freeipa-user-is-in-admins-but-cannot-use-sudo">FreeIPA User Is in <code>admins</code> but Cannot Use sudo</h2>
+<p>Clear the SSSD cache as local root:</p>
+<pre><code class="language-bash">/usr/sbin/sss_cache -E
+systemctl restart sssd
+</code></pre>
+<p>Log completely out, reconnect, then:</p>
+<pre><code class="language-bash">sudo -l
+sudo whoami
+</code></pre>
+<hr />
+<h1 id="22-new-machine-enrollment">22. New Machine Enrollment</h1>
+<p>The final CASTLE enrollment script should automate:</p>
+<pre><code class="language-text">Fresh Debian installation
+        |
+        +--&gt; Set hostname
+        |
+        +--&gt; Install FreeIPA client
+        |
+        +--&gt; Enroll into FreeIPA
+        |
+        +--&gt; Configure SSSD
+        |
+        +--&gt; Configure FreeIPA automount
+        |
+        +--&gt; RAID/NFS roaming homes
+        |
+        +--&gt; Configure /etc/cups/client.conf
+        |
+        +--&gt; ServerName lux.alfred.edu:631
+        |
+        +--&gt; Disable cups-browsed
+        |
+        +--&gt; Install CASTLE wallpaper
+        |
+        +--&gt; Verify LabPrinter
+        |
+        └--&gt; Reboot
+</code></pre>
+<p>The custom deployment folder can contain:</p>
+<pre><code class="language-text">CASTLE-Setup/
+├── castle-enroll.sh
+└── castle-wallpaper.jpg
+</code></pre>
+<p>After running the enrollment script and rebooting, a FreeIPA student should be able to:</p>
+<ol>
+<li>log in using their FreeIPA credentials;</li>
+<li>receive their RAID-backed roaming home directory;</li>
+<li>open a program and press <code>Ctrl+P</code>;</li>
+<li>print using <code>LabPrinter</code>;</li>
+<li>receive the CASTLE lab wallpaper.</li>
+</ol>
+<hr />
+<h1 id="23-summary">23. Summary</h1>
+<p>The final CASTLE printing design is:</p>
+<pre><code class="language-text">                    CASTLE LAB
+                         |
+       +-----------------+-----------------+
+       |                 |                 |
+      bedi              alan             ahmad
+       |                 |                 |
+     daniel            saron             dagim
+       |                 |                 |
+     garegin            kumar             ...
+       \                 |                /
+        \                |               /
+         +---------------+--------------+
+                         |
+                     CUPS / IPP
+                         |
+                         v
+                  lux.alfred.edu
+                         |
+                  CUPS LabPrinter
+                         |
+                        USB
+                         |
+                         v
+               Lexmark MS312dn Printer
+</code></pre>
+<p>The CASTLE workstations rely on <code>lux</code> for the printer queue, while <code>lux</code> handles the physical USB connection to the Lexmark printer.</p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
