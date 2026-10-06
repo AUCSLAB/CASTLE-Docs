@@ -9,6 +9,7 @@ nav:
   - Server: server.md
   - RAID Setup: raid_setup.md
   - Printer Setup: printer_setup.md
+  - Scripts: scripts.md
 
 extra_css:
   - style.css
